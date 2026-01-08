@@ -37,7 +37,7 @@ export class CompaniesController {
   }
 
   @Get()
-  @Roles(UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.VAT_TEAM_LEAD)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.VAT_TEAM_LEAD)
   @ApiOperation({ summary: 'Get all companies (paginated)' })
   @ApiResponse({ status: 200, description: 'Companies retrieved successfully' })
   async findAll(@Query() query: any) {

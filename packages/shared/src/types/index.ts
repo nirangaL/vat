@@ -81,7 +81,7 @@ export interface IVATSubmission {
   companyId: string;
   vatPeriod: {
     year: number;
-    month: number;
+    quarter: number;
   };
   stage: SubmissionStage;
   totalOutputVAT: number;

@@ -105,7 +105,11 @@ export class MappingService {
     suggestedTemplate?: any;
   }> {
     const templates = Object.entries(DEFAULT_MAPPING_TEMPLATES);
-    let bestMatch = { systemType: MappingSystemType.CUSTOM, confidence: 0, template: null };
+    let bestMatch: { systemType: MappingSystemType; confidence: number; template: any } = { 
+      systemType: MappingSystemType.CUSTOM, 
+      confidence: 0, 
+      template: null 
+    };
 
     for (const [systemType, template] of templates) {
       const templateHeaders = Object.keys(template.mappings);

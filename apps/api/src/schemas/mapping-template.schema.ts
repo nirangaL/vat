@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { MappingSystemType } from '@shared/constants';
 
-export type MappingTemplateDocument = MappingTemplate & Document;
+export type MappingTemplateDocument = MappingTemplate & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Schema({ timestamps: true, collection: 'mapping_templates' })
 export class MappingTemplate {

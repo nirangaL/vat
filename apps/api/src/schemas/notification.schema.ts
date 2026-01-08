@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { NotificationType } from '@shared/constants';
 
-export type NotificationDocument = Notification & Document;
+export type NotificationDocument = Notification & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Schema({ timestamps: true, collection: 'notifications' })
 export class Notification {

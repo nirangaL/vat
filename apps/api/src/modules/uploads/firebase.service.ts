@@ -1,11 +1,12 @@
 import { Injectable, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import type { Bucket } from '@google-cloud/storage';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private storage: admin.storage.Storage;
-  private bucket: admin.storage.Bucket;
+  private bucket: Bucket;
 
   constructor(private configService: ConfigService) {}
 

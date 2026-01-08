@@ -15,7 +15,7 @@ export class EmailService {
       return;
     }
 
-    this.transporter = nodemailer.createTransporter(emailConfig.smtp);
+    this.transporter = nodemailer.createTransport(emailConfig.smtp);
   }
 
   async sendEmail(to: string, subject: string, html: string, text?: string) {

@@ -20,7 +20,7 @@ export class RegisterDto {
   @IsString()
   lastName: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.COMPANY_USER, required: false })
+  @ApiProperty({ enum: UserRole, example: UserRole.CLIENT, required: false })
   @IsEnum(UserRole)
   @IsOptional()
   role?: UserRole;

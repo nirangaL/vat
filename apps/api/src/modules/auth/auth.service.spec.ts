@@ -39,7 +39,7 @@ describe('AuthService', () => {
 
   const mockConfigService = {
     get: jest.fn((key: string) => {
-      const config = {
+      const config: Record<string, any> = {
         BCRYPT_ROUNDS: 10,
         MAX_LOGIN_ATTEMPTS: 5,
         LOCKOUT_DURATION_MINUTES: 30,
@@ -131,7 +131,10 @@ describe('AuthService', () => {
       const result = await service.validateUser('test@example.com', 'Password123!');
 
       expect(result).toBeDefined();
-      expect(result.email).toBe(mockUser.email);
+      expect(result).not.toBeNull();
+      if (result) {
+        expect(result.email).toBe(mockUser.email);
+      }
     });
 
     it('should return null if user not found', async () => {

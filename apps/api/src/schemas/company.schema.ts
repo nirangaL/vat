@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { EntityStatus } from '@shared/constants';
 
-export type CompanyDocument = Company & Document;
+export type CompanyDocument = Company & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 class Address {
   @Prop({ required: true })

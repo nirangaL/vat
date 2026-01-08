@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { FileUploadStatus } from '@shared/constants';
 
-export type UploadDocument = Upload & Document;
+export type UploadDocument = Upload & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 class UploadError {
   @Prop({ required: true })

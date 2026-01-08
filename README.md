@@ -33,7 +33,7 @@ A comprehensive SaaS platform for managing VAT compliance and IRD submissions fo
 
 ### Prerequisites
 
-- Node.js >= 20.0.0
+- Node.js >= 24.0.0 (LTS)
 - npm >= 10.0.0
 - Docker & Docker Compose (for local services)
 

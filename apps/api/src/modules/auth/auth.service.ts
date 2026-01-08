@@ -113,6 +113,9 @@ export class AuthService {
     }
 
     if (verify2FADto.method === TwoFactorMethod.TOTP) {
+      if (!user.twoFactorSecret) {
+        throw new BadRequestException('TOTP not configured for this user');
+      }
       const isValid = authenticator.verify({
         token: verify2FADto.code,
         secret: user.twoFactorSecret,

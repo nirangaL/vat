@@ -142,7 +142,7 @@ export class UploadsService {
   }
 
   private validateFile(file: Express.Multer.File) {
-    const isSpreadsheet = SUPPORTED_FILE_TYPES.SPREADSHEET.includes(file.mimetype);
+    const isSpreadsheet = SUPPORTED_FILE_TYPES.SPREADSHEET.includes(file.mimetype as any);
 
     if (!isSpreadsheet) {
       throw new BadRequestException(

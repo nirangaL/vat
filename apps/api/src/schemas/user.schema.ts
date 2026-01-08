@@ -2,7 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { UserRole, EntityStatus } from '@shared/constants';
 
-export type UserDocument = User & Document;
+export type UserDocument = User & Document & {
+  createdAt: Date;
+  updatedAt: Date;
+};
 
 @Schema({ timestamps: true, collection: 'users' })
 export class User {
@@ -18,7 +21,7 @@ export class User {
   @Prop({ required: true, trim: true })
   lastName: string;
 
-  @Prop({ required: true, enum: Object.values(UserRole), default: UserRole.COMPANY_USER })
+  @Prop({ required: true, enum: Object.values(UserRole), default: UserRole.CLIENT })
   role: UserRole;
 
   @Prop({ required: true, enum: Object.values(EntityStatus), default: EntityStatus.ACTIVE })
