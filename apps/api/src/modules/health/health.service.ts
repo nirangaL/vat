@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { SupabaseService } from '../../supabase/supabase.service';
 
 @Injectable()
 export class HealthService {
-  constructor(@InjectConnection() private connection: Connection) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
   async check() {
-    const dbStatus = this.connection.readyState === 1 ? 'healthy' : 'unhealthy';
+    const start = Date.now();
+
+    const admin = this.supabaseService.getAdminClient();
+    const { error } = await admin.from('vat_rules').select('id').limit(1);
+
+    const dbStatus = error ? 'unhealthy' : 'healthy';
 
     return {
       status: dbStatus === 'healthy' ? 'ok' : 'error',
@@ -18,7 +22,7 @@ export class HealthService {
       checks: {
         database: {
           status: dbStatus,
-          responseTime: dbStatus === 'healthy' ? 'connected' : 'disconnected',
+          responseTime: `${Date.now() - start}ms`,
         },
         memory: {
           status: 'healthy',

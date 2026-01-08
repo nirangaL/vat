@@ -9,7 +9,8 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
-  app.setGlobalPrefix('api');
+  const prefix = process.env.API_PREFIX || 'api/v1';
+  app.setGlobalPrefix(prefix);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -28,22 +29,21 @@ async function bootstrap() {
   });
 
   const config = new DocumentBuilder()
-    .setTitle('VAT Management System API')
+    .setTitle('VAT Management SaaS API')
     .setDescription(
-      'Comprehensive API for VAT Management and IRD Submission System for Sri Lankan Companies',
+      'Multi-tenant VAT Management and IRD Submission API (Supabase PostgreSQL + RLS + White-labeling)',
     )
     .setVersion('1.0')
     .addBearerAuth()
-    .addTag('Authentication', 'User authentication and authorization endpoints')
-    .addTag('Companies', 'Company registration and management')
-    .addTag('Uploads', 'File upload and management (CSV/Excel)')
-    .addTag('Mapping', 'Column mapping templates and detection')
-    .addTag('Notifications', 'Email and in-app notifications')
+    .addTag('Authentication', 'Supabase Auth + JWT tenant context')
+    .addTag('Tenants', 'Service provider (tenant) registration and profile')
+    .addTag('Branding', 'White-label branding per tenant')
+    .addTag('Clients', 'Tenant client management')
     .addTag('Health', 'Health check and system status')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup(`${prefix}/docs`, app, document);
 
   if (!fs.existsSync('./logs')) {
     fs.mkdirSync('./logs');
@@ -63,9 +63,9 @@ async function bootstrap() {
     ║   🚀 VAT Management System API                           ║
     ║                                                           ║
     ║   🌐 Server running on: http://localhost:${port}           ║
-    ║   📚 API Documentation: http://localhost:${port}/api/docs  ║
-    ║   📄 OpenAPI Spec: http://localhost:${port}/api/docs-json  ║
-    ║   ❤️  Health Check: http://localhost:${port}/api/health    ║
+    ║   📚 API Documentation: http://localhost:${port}/${prefix}/docs  ║
+    ║   📄 OpenAPI Spec: http://localhost:${port}/${prefix}/docs-json  ║
+    ║   ❤️  Health Check: http://localhost:${port}/${prefix}/health    ║
     ║                                                           ║
     ╚═══════════════════════════════════════════════════════════╝
   `);
