@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUploadDto } from './dto';
@@ -14,11 +10,7 @@ export class UploadsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async upload(
-    organizationId: string,
-    file: Express.Multer.File,
-    dto: CreateUploadDto,
-  ) {
+  async upload(organizationId: string, file: Express.Multer.File, dto: CreateUploadDto) {
     if (!file?.buffer) {
       throw new BadRequestException('No file uploaded');
     }
@@ -32,12 +24,10 @@ export class UploadsService {
     const clientPath = dto.client_id ? `client-${dto.client_id}` : 'general';
     const path = `uploads/${organizationId}/${clientPath}/${timestamp}-${safeName}`;
 
-    const { error: uploadError } = await admin.storage
-      .from(bucket)
-      .upload(path, file.buffer, {
-        contentType: file.mimetype,
-        upsert: false,
-      });
+    const { error: uploadError } = await admin.storage.from(bucket).upload(path, file.buffer, {
+      contentType: file.mimetype,
+      upsert: false,
+    });
 
     if (uploadError) {
       this.supabaseService.handleError(uploadError, 'Upload failed');

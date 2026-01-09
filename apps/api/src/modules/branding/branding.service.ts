@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateBrandingDto } from './dto';
@@ -26,10 +22,7 @@ export class BrandingService {
     return branding;
   }
 
-  async updateBranding(
-    organizationId: string,
-    dto: UpdateBrandingDto,
-  ) {
+  async updateBranding(organizationId: string, dto: UpdateBrandingDto) {
     try {
       return await this.prisma.branding.update({
         where: { organization_id: organizationId },
@@ -43,23 +36,12 @@ export class BrandingService {
     }
   }
 
-  async uploadLogo(
-    organizationId: string,
-    file: Express.Multer.File,
-  ) {
+  async uploadLogo(organizationId: string, file: Express.Multer.File) {
     return this.uploadAsset(organizationId, file, 'logo_url', 'logo');
   }
 
-  async uploadFavicon(
-    organizationId: string,
-    file: Express.Multer.File,
-  ) {
-    return this.uploadAsset(
-      organizationId,
-      file,
-      'favicon_url',
-      'favicon',
-    );
+  async uploadFavicon(organizationId: string, file: Express.Multer.File) {
+    return this.uploadAsset(organizationId, file, 'favicon_url', 'favicon');
   }
 
   private async uploadAsset(
@@ -75,9 +57,7 @@ export class BrandingService {
     const bucket = this.supabaseService.getBucketName();
     const admin = this.supabaseService.getAdminClient();
 
-    const ext = file.originalname.includes('.')
-      ? file.originalname.split('.').pop()
-      : 'png';
+    const ext = file.originalname.includes('.') ? file.originalname.split('.').pop() : 'png';
 
     const path = `branding/${organizationId}/${prefix}.${ext}`;
 

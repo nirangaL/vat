@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -30,7 +26,7 @@ export class AuthService {
 
     const dbUser = await this.prisma.user.findUnique({
       where: { id: data.user.id },
-      select: { organization_id: true, role: true, full_name: true, is_team_member: true }
+      select: { organization_id: true, role: true, full_name: true, is_team_member: true },
     });
 
     const organizationId =
@@ -66,19 +62,18 @@ export class AuthService {
     const admin = this.supabaseService.getAdminClient();
     const role = dto.role ?? UserRole.VAT_TEAM_MEMBER;
 
-    const { data: created, error: createError } =
-      await admin.auth.admin.createUser({
-        email: dto.email,
-        password: dto.password,
-        email_confirm: true,
-        user_metadata: {
-          full_name: dto.full_name,
-        },
-        app_metadata: {
-          organization_id: currentOrganizationId,
-          role,
-        },
-      });
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email: dto.email,
+      password: dto.password,
+      email_confirm: true,
+      user_metadata: {
+        full_name: dto.full_name,
+      },
+      app_metadata: {
+        organization_id: currentOrganizationId,
+        role,
+      },
+    });
 
     if (createError || !created?.user) {
       throw new BadRequestException(createError?.message ?? 'User creation failed');

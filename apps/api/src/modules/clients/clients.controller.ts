@@ -1,10 +1,5 @@
 import { Body, Controller, Get, Param, Patch, Post, UseInterceptors } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant } from '../../common/decorators';
 import { ClientsService } from './clients.service';
 import { CreateClientDto, UpdateClientDto } from './dto';
@@ -20,10 +15,7 @@ export class ClientsController {
   @Post()
   @ApiOperation({ summary: 'Create a client within current tenant' })
   @ApiResponse({ status: 201, description: 'Client created successfully' })
-  async create(
-    @CurrentTenant() organizationId: string,
-    @Body() dto: CreateClientDto,
-  ) {
+  async create(@CurrentTenant() organizationId: string, @Body() dto: CreateClientDto) {
     return this.clientsService.create(organizationId, dto);
   }
 
@@ -38,10 +30,7 @@ export class ClientsController {
   @ApiOperation({ summary: 'Get client by ID (current tenant only)' })
   @ApiResponse({ status: 200, description: 'Client retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Client not found' })
-  async findById(
-    @CurrentTenant() organizationId: string,
-    @Param('id') id: string,
-  ) {
+  async findById(@CurrentTenant() organizationId: string, @Param('id') id: string) {
     return this.clientsService.findById(organizationId, id);
   }
 

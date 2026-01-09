@@ -49,10 +49,7 @@ async function bootstrap() {
     fs.mkdirSync('./logs');
   }
 
-  fs.writeFileSync(
-    './swagger-spec.json',
-    JSON.stringify(document, null, 2),
-  );
+  fs.writeFileSync('./swagger-spec.json', JSON.stringify(document, null, 2));
 
   const port = process.env.PORT || 3000;
   await app.listen(port);

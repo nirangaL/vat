@@ -1,10 +1,5 @@
 import { Body, Controller, Get, Patch, Post, UseInterceptors } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant, Public } from '../../common/decorators';
 import { RegisterTenantDto, UpdateTenantDto } from './dto';
 import { TenantsService } from './tenants.service';
@@ -36,10 +31,7 @@ export class TenantsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: "Update current tenant's profile" })
   @ApiResponse({ status: 200, description: 'Tenant profile updated' })
-  async updateMe(
-    @CurrentTenant() organizationId: string,
-    @Body() dto: UpdateTenantDto,
-  ) {
+  async updateMe(@CurrentTenant() organizationId: string, @Body() dto: UpdateTenantDto) {
     return this.tenantsService.updateMe(organizationId, dto);
   }
 }

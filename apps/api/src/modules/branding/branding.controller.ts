@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Patch,
-  Post,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -38,10 +30,7 @@ export class BrandingController {
   @Patch()
   @ApiOperation({ summary: 'Update branding for current tenant' })
   @ApiResponse({ status: 200, description: 'Branding updated successfully' })
-  async updateBranding(
-    @CurrentTenant() organizationId: string,
-    @Body() dto: UpdateBrandingDto,
-  ) {
+  async updateBranding(@CurrentTenant() organizationId: string, @Body() dto: UpdateBrandingDto) {
     return this.brandingService.updateBranding(organizationId, dto);
   }
 

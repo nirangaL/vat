@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { SupabaseService } from '../../supabase/supabase.service';
@@ -39,7 +34,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const authUser = await this.supabaseService.getAuthUser(accessToken);
 
-    const organizationIdFromMetadata = 
+    const organizationIdFromMetadata =
       authUser.app_metadata?.organization_id || authUser.app_metadata?.tenant_id;
     const roleFromMetadata = authUser.app_metadata?.role;
 
@@ -47,13 +42,11 @@ export class JwtAuthGuard implements CanActivate {
       typeof organizationIdFromMetadata === 'string' ? organizationIdFromMetadata : undefined;
 
     let role: UserRole | undefined =
-      typeof roleFromMetadata === 'string'
-        ? (roleFromMetadata as UserRole)
-        : undefined;
+      typeof roleFromMetadata === 'string' ? (roleFromMetadata as UserRole) : undefined;
 
     const dbUser = await this.prisma.user.findUnique({
       where: { id: authUser.id },
-      select: { organization_id: true, role: true, full_name: true, is_team_member: true }
+      select: { organization_id: true, role: true, full_name: true, is_team_member: true },
     });
 
     if (dbUser) {
@@ -67,7 +60,7 @@ export class JwtAuthGuard implements CanActivate {
 
     request.accessToken = accessToken;
     request.organization_id = organizationId;
-    
+
     request.user = {
       userId: authUser.id,
       email: authUser.email,
