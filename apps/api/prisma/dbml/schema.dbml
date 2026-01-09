@@ -1,0 +1,255 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Organization {
+  id String [pk]
+  name String [not null]
+  slug String [unique, not null]
+  registration_number String [unique]
+  tin String [unique, not null]
+  email String [unique, not null]
+  logo_url String
+  website String
+  subscription_status String [not null, default: 'trial']
+  subscription_plan String [not null, default: 'basic']
+  stripe_customer_id String [unique]
+  branding Branding
+  users User [not null]
+  clients Client [not null]
+  submissions Submission [not null]
+  uploads Upload [not null]
+  mapping_templates MappingTemplate [not null]
+  documents Document [not null]
+  audit_logs AuditLog [not null]
+  tasks Task [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Table User {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  email String [unique, not null]
+  password_hash String [not null]
+  full_name String
+  role String [not null, default: 'viewer']
+  is_team_member Boolean [not null, default: true]
+  is_active Boolean [not null, default: true]
+  two_fa_enabled Boolean [not null, default: false]
+  two_fa_method String
+  two_fa_secret String
+  last_login DateTime
+  created_submissions Submission [not null]
+  assigned_tasks Task [not null]
+  audit_logs AuditLog [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+
+  indexes {
+    (organization_id, email) [unique]
+  }
+}
+
+Table Client {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  company_name String [not null]
+  tin String [not null]
+  registration_number String
+  taxable_period String [not null, default: 'quarterly']
+  status String [not null, default: 'active']
+  industry String
+  annual_turnover String
+  submissions Submission [not null]
+  uploads Upload [not null]
+  documents Document [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+
+  indexes {
+    (organization_id, tin) [unique]
+  }
+}
+
+Table Branding {
+  id String [pk]
+  organization_id String [unique, not null]
+  organization Organization [not null]
+  company_name String
+  company_website String
+  support_email String
+  support_phone String
+  logo_url String
+  favicon_url String
+  colors Json [not null, default: '{"primary": "#0066CC", "secondary": "#00CC66", "accent": "#FF6600", "background": "#FFFFFF", "text_color": "#333333"}']
+  footer_text String
+  custom_assets Json
+  enabled Boolean [not null, default: true]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Table Upload {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  client_id String
+  client Client
+  file_name String [not null]
+  file_url String [not null]
+  file_size Int
+  file_type String
+  upload_type String [not null, default: 'csv']
+  status String [not null, default: 'uploaded']
+  error_message String
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Table MappingTemplate {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  name String [not null]
+  system_type String [not null]
+  mapping_config Json [not null]
+  is_default Boolean [not null, default: false]
+  description String
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Table Submission {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  client_id String [not null]
+  client Client [not null]
+  period String [not null]
+  stage Int [not null, default: 1]
+  status String [not null, default: 'draft']
+  ird_reference String
+  created_by String [not null]
+  creator User [not null]
+  documents Document [not null]
+  audit_logs AuditLog [not null]
+  tasks Task [not null]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+
+  indexes {
+    (organization_id, client_id, period) [unique]
+  }
+}
+
+Table Document {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  client_id String
+  client Client
+  submission_id String
+  submission Submission
+  file_name String [not null]
+  file_url String [not null]
+  document_type String
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table AuditLog {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  entity_type String [not null]
+  entity_id String [not null]
+  action String [not null]
+  user_id String
+  user User
+  changes Json
+  ip_address String
+  submission_id String
+  submission Submission
+  timestamp DateTime [default: `now()`, not null]
+}
+
+Table Task {
+  id String [pk]
+  organization_id String [not null]
+  organization Organization [not null]
+  title String [not null]
+  description String
+  status String [not null, default: 'todo']
+  priority String [not null, default: 'medium']
+  assigned_to String [not null]
+  assigned_user User [not null]
+  submission_id String
+  submission Submission
+  due_date DateTime
+  completed_at DateTime
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Table VatRule {
+  id String [pk]
+  rule_name String [not null]
+  rule_type String [not null]
+  rule_value String
+  description String
+  effective_date DateTime [not null]
+  end_date DateTime
+  version Int [not null, default: 1]
+  created_at DateTime [default: `now()`, not null]
+}
+
+Table KnowledgeBaseArticle {
+  id String [pk]
+  title String [not null]
+  content String [not null]
+  category String
+  slug String [unique, not null]
+  author String
+  is_published Boolean [not null, default: false]
+  view_count Int [not null, default: 0]
+  created_at DateTime [default: `now()`, not null]
+  updated_at DateTime [not null]
+}
+
+Ref: User.organization_id > Organization.id [delete: Cascade]
+
+Ref: Client.organization_id > Organization.id [delete: Cascade]
+
+Ref: Branding.organization_id - Organization.id [delete: Cascade]
+
+Ref: Upload.organization_id > Organization.id [delete: Cascade]
+
+Ref: Upload.client_id > Client.id [delete: Set Null]
+
+Ref: MappingTemplate.organization_id > Organization.id [delete: Cascade]
+
+Ref: Submission.organization_id > Organization.id [delete: Cascade]
+
+Ref: Submission.client_id > Client.id [delete: Cascade]
+
+Ref: Submission.created_by > User.id
+
+Ref: Document.organization_id > Organization.id [delete: Cascade]
+
+Ref: Document.client_id > Client.id [delete: Set Null]
+
+Ref: Document.submission_id > Submission.id [delete: Set Null]
+
+Ref: AuditLog.organization_id > Organization.id [delete: Cascade]
+
+Ref: AuditLog.user_id > User.id [delete: Set Null]
+
+Ref: AuditLog.submission_id > Submission.id [delete: Set Null]
+
+Ref: Task.organization_id > Organization.id [delete: Cascade]
+
+Ref: Task.assigned_to > User.id
+
+Ref: Task.submission_id > Submission.id [delete: Set Null]

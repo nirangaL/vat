@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator dbml {
+  provider = "prisma-dbml-generator"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ORGANIZATION (Tenant) Model
+// ============================================
+
+model Organization {
+  id                  String    @id @default(cuid())
+  name                String
+  slug                String    @unique
+  registration_number String?   @unique
+  tin                 String    @unique
+  email               String    @unique
+  logo_url            String?
+  website             String?
+  subscription_status String    @default("trial") // trial, active, suspended
+  subscription_plan   String    @default("basic") // basic, professional, enterprise
+  stripe_customer_id  String?   @unique
+  
+  // Branding (White-Labeling)
+  branding            Branding?
+  
+  // Relations
+  users               User[]
+  clients             Client[]
+  submissions         Submission[]
+  uploads             Upload[]
+  mapping_templates   MappingTemplate[]
+  documents           Document[]
+  audit_logs          AuditLog[]
+  tasks               Task[]
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([slug])
+  @@index([tin])
+}
+
+// ============================================
+// USERS Model
+// ============================================
+
+model User {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  email               String    @unique
+  password_hash       String
+  full_name           String?
+  role                String    @default("viewer") // SUPER_ADMIN, VAT_TEAM_LEAD, VAT_TEAM_MEMBER, CLIENT
+  is_team_member      Boolean   @default(true)
+  is_active           Boolean   @default(true)
+  
+  // 2FA
+  two_fa_enabled      Boolean   @default(false)
+  two_fa_method       String?   // email, totp
+  two_fa_secret       String?
+  
+  last_login          DateTime?
+  
+  // Relations
+  created_submissions Submission[] @relation("creator")
+  assigned_tasks      Task[]
+  audit_logs          AuditLog[]
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@unique([organization_id, email])
+  @@index([organization_id])
+}
+
+// ============================================
+// CLIENTS Model (End-user companies)
+// ============================================
+
+model Client {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  company_name        String
+  tin                 String
+  registration_number String?
+  taxable_period      String    @default("quarterly") // monthly, quarterly
+  status              String    @default("active") // active, inactive, suspended
+  industry            String?
+  annual_turnover     String?
+  
+  // Relations
+  submissions         Submission[]
+  uploads             Upload[]
+  documents           Document[]
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@unique([organization_id, tin])
+  @@index([organization_id])
+}
+
+// ============================================
+// BRANDING Model (White-Labeling)
+// ============================================
+
+model Branding {
+  id                  String    @id @default(cuid())
+  organization_id     String    @unique
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  company_name        String?
+  company_website     String?
+  support_email       String?
+  support_phone       String?
+  logo_url            String?
+  favicon_url         String?
+  
+  colors              Json      @default("{\"primary\": \"#0066CC\", \"secondary\": \"#00CC66\", \"accent\": \"#FF6600\", \"background\": \"#FFFFFF\", \"text_color\": \"#333333\"}")
+  footer_text         String?
+  custom_assets       Json?
+  
+  enabled             Boolean   @default(true)
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([organization_id])
+}
+
+// ============================================
+// UPLOADS Model
+// ============================================
+
+model Upload {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  client_id           String?
+  client              Client?   @relation(fields: [client_id], references: [id], onDelete: SetNull)
+  
+  file_name           String
+  file_url            String
+  file_size           Int?
+  file_type           String? // csv, xlsx, etc
+  upload_type         String    @default("csv")
+  status              String    @default("uploaded") // uploaded, processing, completed, failed
+  error_message       String?
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([organization_id])
+  @@index([client_id])
+}
+
+// ============================================
+// MAPPING_TEMPLATES Model
+// ============================================
+
+model MappingTemplate {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  name                String
+  system_type         String    // quickbooks, xero, tally, cleartax, zoho, custom
+  mapping_config      Json      // Column mappings stored as JSON
+  is_default          Boolean   @default(false)
+  description         String?
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([organization_id])
+  @@index([system_type])
+}
+
+// ============================================
+// SUBMISSIONS Model
+// ============================================
+
+model Submission {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  client_id           String
+  client              Client    @relation(fields: [client_id], references: [id], onDelete: Cascade)
+  
+  period              String    // YYYY-MM
+  stage               Int       @default(1) // 1-8 submission stages
+  status              String    @default("draft") // draft, submitted, filed, closed
+  ird_reference       String?
+  
+  created_by          String
+  creator             User      @relation("creator", fields: [created_by], references: [id])
+  
+  // Relations
+  documents           Document[]
+  audit_logs          AuditLog[]
+  tasks               Task[]
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@unique([organization_id, client_id, period])
+  @@index([organization_id])
+  @@index([client_id])
+  @@index([stage])
+  @@index([status])
+}
+
+// ============================================
+// DOCUMENTS Model
+// ============================================
+
+model Document {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  client_id           String?
+  client              Client?   @relation(fields: [client_id], references: [id], onDelete: SetNull)
+  
+  submission_id       String?
+  submission          Submission? @relation(fields: [submission_id], references: [id], onDelete: SetNull)
+  
+  file_name           String
+  file_url            String
+  document_type       String? // invoice, receipt, proof, etc
+  
+  created_at          DateTime  @default(now())
+  
+  @@index([organization_id])
+  @@index([client_id])
+  @@index([submission_id])
+}
+
+// ============================================
+// AUDIT_LOGS Model
+// ============================================
+
+model AuditLog {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  entity_type         String
+  entity_id           String
+  action              String    // create, update, delete
+  user_id             String?
+  user                User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+  
+  changes             Json?     // What changed
+  ip_address          String?
+  
+  submission_id       String?
+  submission          Submission? @relation(fields: [submission_id], references: [id], onDelete: SetNull)
+  
+  timestamp           DateTime  @default(now())
+  
+  @@index([organization_id])
+  @@index([timestamp])
+  @@index([user_id])
+}
+
+// ============================================
+// TASKS Model (CRM)
+// ============================================
+
+model Task {
+  id                  String    @id @default(cuid())
+  organization_id     String
+  organization        Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  title               String
+  description         String?
+  status              String    @default("todo") // todo, in_progress, in_review, done
+  priority            String    @default("medium") // low, medium, high, urgent
+  
+  assigned_to         String
+  assigned_user       User      @relation(fields: [assigned_to], references: [id])
+  
+  submission_id       String?
+  submission          Submission? @relation(fields: [submission_id], references: [id], onDelete: SetNull)
+  
+  due_date            DateTime?
+  completed_at        DateTime?
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([organization_id])
+  @@index([assigned_to])
+  @@index([submission_id])
+  @@index([status])
+}
+
+// ============================================
+// SHARED TABLES (NO organization_id)
+// ============================================
+
+model VatRule {
+  id                  String    @id @default(cuid())
+  rule_name           String
+  rule_type           String    // rate, schedule, deadline
+  rule_value          String?
+  description         String?
+  effective_date      DateTime
+  end_date            DateTime?
+  version             Int       @default(1)
+  
+  created_at          DateTime  @default(now())
+  
+  @@index([effective_date])
+}
+
+model KnowledgeBaseArticle {
+  id                  String    @id @default(cuid())
+  title               String
+  content             String
+  category            String?
+  slug                String    @unique
+  author              String?
+  is_published        Boolean   @default(false)
+  view_count          Int       @default(0)
+  
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+  
+  @@index([slug])
+  @@index([is_published])
+}

@@ -4,75 +4,58 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { UpdateBrandingDto } from './dto';
 
 @Injectable()
 export class BrandingService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly prisma: PrismaService,
+  ) {}
 
-  async getBranding(tenantId: string, accessToken: string) {
-    const client = this.supabaseService.createUserClient(accessToken);
+  async getBranding(organizationId: string) {
+    const branding = await this.prisma.branding.findUnique({
+      where: { organization_id: organizationId },
+    });
 
-    const { data, error } = await client
-      .from('branding')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .maybeSingle();
-
-    if (error) {
-      this.supabaseService.handleError(error);
-    }
-
-    if (!data) {
+    if (!branding) {
       throw new NotFoundException('Branding not found');
     }
 
-    return data;
+    return branding;
   }
 
   async updateBranding(
-    tenantId: string,
-    accessToken: string,
+    organizationId: string,
     dto: UpdateBrandingDto,
   ) {
-    const client = this.supabaseService.createUserClient(accessToken);
-
-    const { data, error } = await client
-      .from('branding')
-      .update({
-        ...dto,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('tenant_id', tenantId)
-      .select('*')
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
+    try {
+      return await this.prisma.branding.update({
+        where: { organization_id: organizationId },
+        data: dto,
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
         throw new NotFoundException('Branding not found');
       }
-      this.supabaseService.handleError(error);
+      throw new BadRequestException(error.message || 'Update failed');
     }
-
-    return data;
   }
 
   async uploadLogo(
-    tenantId: string,
-    accessToken: string,
+    organizationId: string,
     file: Express.Multer.File,
   ) {
-    return this.uploadAsset(tenantId, accessToken, file, 'logo_url', 'logo');
+    return this.uploadAsset(organizationId, file, 'logo_url', 'logo');
   }
 
   async uploadFavicon(
-    tenantId: string,
-    accessToken: string,
+    organizationId: string,
     file: Express.Multer.File,
   ) {
     return this.uploadAsset(
-      tenantId,
-      accessToken,
+      organizationId,
       file,
       'favicon_url',
       'favicon',
@@ -80,8 +63,7 @@ export class BrandingService {
   }
 
   private async uploadAsset(
-    tenantId: string,
-    accessToken: string,
+    organizationId: string,
     file: Express.Multer.File,
     column: 'logo_url' | 'favicon_url',
     prefix: 'logo' | 'favicon',
@@ -97,7 +79,7 @@ export class BrandingService {
       ? file.originalname.split('.').pop()
       : 'png';
 
-    const path = `branding/${tenantId}/${prefix}.${ext}`;
+    const path = `branding/${organizationId}/${prefix}.${ext}`;
 
     const { error: uploadError } = await admin.storage.from(bucket).upload(path, file.buffer, {
       contentType: file.mimetype,
@@ -111,25 +93,18 @@ export class BrandingService {
     const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);
     const url = urlData.publicUrl;
 
-    const client = this.supabaseService.createUserClient(accessToken);
-
-    const { data, error } = await client
-      .from('branding')
-      .update({
-        [column]: url,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('tenant_id', tenantId)
-      .select('*')
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
+    try {
+      return await this.prisma.branding.update({
+        where: { organization_id: organizationId },
+        data: {
+          [column]: url,
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
         throw new NotFoundException('Branding not found');
       }
-      this.supabaseService.handleError(error);
+      throw new BadRequestException(error.message || 'Update failed');
     }
-
-    return data;
   }
 }

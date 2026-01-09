@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RegisterUserDto } from './dto';
 import { UserRole } from '@shared/constants';
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async login(loginDto: LoginDto) {
     const supabase = this.supabaseService.getAnonClient();
@@ -24,19 +28,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const admin = this.supabaseService.getAdminClient();
-    const { data: dbUser, error: dbUserError } = await admin
-      .from('users')
-      .select('tenant_id, role, full_name, is_team_member')
-      .eq('id', data.user.id)
-      .maybeSingle();
+    const dbUser = await this.prisma.user.findUnique({
+      where: { id: data.user.id },
+      select: { organization_id: true, role: true, full_name: true, is_team_member: true }
+    });
 
-    if (dbUserError) {
-      this.supabaseService.handleError(dbUserError);
-    }
-
-    const tenantId =
-      (dbUser?.tenant_id as string | undefined) ??
+    const organizationId =
+      dbUser?.organization_id ??
+      (data.user.app_metadata?.organization_id as string | undefined) ??
       (data.user.app_metadata?.tenant_id as string | undefined);
 
     const role =
@@ -44,28 +43,27 @@ export class AuthService {
       (data.user.app_metadata?.role as UserRole | undefined) ??
       UserRole.CLIENT;
 
-    if (!tenantId) {
-      throw new UnauthorizedException('User missing tenant context');
+    if (!organizationId) {
+      throw new UnauthorizedException('User missing organization context');
     }
 
     return {
       accessToken: data.session.access_token,
       refreshToken: data.session.refresh_token,
-      tenantId,
+      organizationId,
       user: {
         id: data.user.id,
         email: data.user.email,
         fullName: dbUser?.full_name,
         role,
-        tenantId,
+        organizationId,
         isTeamMember: dbUser?.is_team_member,
       },
     };
   }
 
-  async registerUser(currentTenantId: string, dto: RegisterUserDto) {
+  async registerUser(currentOrganizationId: string, dto: RegisterUserDto) {
     const admin = this.supabaseService.getAdminClient();
-
     const role = dto.role ?? UserRole.VAT_TEAM_MEMBER;
 
     const { data: created, error: createError } =
@@ -77,7 +75,7 @@ export class AuthService {
           full_name: dto.full_name,
         },
         app_metadata: {
-          tenant_id: currentTenantId,
+          organization_id: currentOrganizationId,
           role,
         },
       });
@@ -88,25 +86,29 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    const { data: dbUser, error: dbInsertError } = await admin
-      .from('users')
-      .insert({
-        id: created.user.id,
-        tenant_id: currentTenantId,
-        email: dto.email,
-        password_hash: passwordHash,
-        full_name: dto.full_name,
-        role,
-        is_team_member: true,
-        two_fa_enabled: false,
-      })
-      .select('id, tenant_id, email, full_name, role, is_team_member')
-      .single();
-
-    if (dbInsertError) {
-      this.supabaseService.handleError(dbInsertError);
+    try {
+      return await this.prisma.user.create({
+        data: {
+          id: created.user.id,
+          organization_id: currentOrganizationId,
+          email: dto.email,
+          password_hash: passwordHash,
+          full_name: dto.full_name,
+          role,
+          is_team_member: true,
+          two_fa_enabled: false,
+        },
+        select: {
+          id: true,
+          organization_id: true,
+          email: true,
+          full_name: true,
+          role: true,
+          is_team_member: true,
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Database creation failed');
     }
-
-    return dbUser;
   }
 }

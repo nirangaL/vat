@@ -1,7 +1,7 @@
 import { UserRole, EntityStatus, SubmissionStage, TransactionType, VATScheduleType } from '../constants/enums';
 
 export interface IUser {
-  _id: string;
+  id: string;
   email: string;
   password: string;
   firstName: string;
@@ -16,7 +16,7 @@ export interface IUser {
 }
 
 export interface ICompany {
-  _id: string;
+  id: string;
   name: string;
   tin: string;
   address: {
@@ -36,7 +36,7 @@ export interface ICompany {
 }
 
 export interface IVATTransaction {
-  _id: string;
+  id: string;
   companyId: string;
   transactionDate: Date;
   transactionType: TransactionType;
@@ -55,7 +55,7 @@ export interface IVATTransaction {
 }
 
 export interface IFileUpload {
-  _id: string;
+  id: string;
   companyId: string;
   uploadedBy: string;
   fileName: string;
@@ -77,7 +77,7 @@ export interface IFileUpload {
 }
 
 export interface IVATSubmission {
-  _id: string;
+  id: string;
   companyId: string;
   vatPeriod: {
     year: number;
@@ -100,7 +100,7 @@ export interface IVATSubmission {
 }
 
 export interface IMappingTemplate {
-  _id: string;
+  id: string;
   name: string;
   systemType: string;
   companyId?: string;
@@ -131,7 +131,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface INotification {
-  _id: string;
+  id: string;
   userId: string;
   companyId?: string;
   type: string;
