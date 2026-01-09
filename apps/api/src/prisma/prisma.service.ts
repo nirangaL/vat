@@ -15,8 +15,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private applyTenantMiddleware() {
     this.$use(
       async (
-        params: Prisma.MiddlewareParams,
-        next: (params: Prisma.MiddlewareParams) => Promise<any>,
+        params: any,
+        next: (params: any) => Promise<any>,
       ) => {
         // Tables that require organization_id filtering
         const tablesWithTenantId = [
