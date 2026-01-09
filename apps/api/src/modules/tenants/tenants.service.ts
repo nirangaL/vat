@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 import { UserRole } from '@shared/constants';
@@ -47,19 +43,18 @@ export class TenantsService {
         });
 
         // 2. Create User in Supabase Auth
-        const { data: authCreated, error: authError } =
-          await admin.auth.admin.createUser({
-            email: dto.email,
-            password: dto.password,
-            email_confirm: true,
-            user_metadata: {
-              full_name: dto.admin_full_name,
-            },
-            app_metadata: {
-              organization_id: organization.id,
-              role: UserRole.VAT_TEAM_LEAD,
-            },
-          });
+        const { data: authCreated, error: authError } = await admin.auth.admin.createUser({
+          email: dto.email,
+          password: dto.password,
+          email_confirm: true,
+          user_metadata: {
+            full_name: dto.admin_full_name,
+          },
+          app_metadata: {
+            organization_id: organization.id,
+            role: UserRole.VAT_TEAM_LEAD,
+          },
+        });
 
         if (authError || !authCreated?.user) {
           throw new BadRequestException(
@@ -87,9 +82,7 @@ export class TenantsService {
       });
     } catch (error) {
       if (error.code === 'P2002') {
-        throw new ConflictException(
-          'Organization with this TIN or Email already exists',
-        );
+        throw new ConflictException('Organization with this TIN or Email already exists');
       }
       throw new BadRequestException(error.message || 'Registration failed');
     }

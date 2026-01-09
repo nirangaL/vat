@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -26,8 +22,7 @@ export class SupabaseService {
   constructor(private readonly configService: ConfigService) {
     this.url = this.configService.get<string>('supabase.url') || '';
     this.anonKey = this.configService.get<string>('supabase.anonKey') || '';
-    this.serviceRoleKey =
-      this.configService.get<string>('supabase.serviceRoleKey') || '';
+    this.serviceRoleKey = this.configService.get<string>('supabase.serviceRoleKey') || '';
     this.bucketName = this.configService.get<string>('supabase.bucketName') || '';
 
     if (!this.url || !this.anonKey || !this.serviceRoleKey) {

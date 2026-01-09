@@ -1,10 +1,5 @@
 import { Body, Controller, Get, Post, UseGuards, UseInterceptors } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@shared/constants';
 import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
@@ -33,10 +28,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new user within the current organization' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
-  async registerUser(
-    @CurrentTenant() organizationId: string,
-    @Body() dto: RegisterUserDto,
-  ) {
+  async registerUser(@CurrentTenant() organizationId: string, @Body() dto: RegisterUserDto) {
     return this.authService.registerUser(organizationId, dto);
   }
 

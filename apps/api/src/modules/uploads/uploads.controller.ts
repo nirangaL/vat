@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -66,10 +58,7 @@ export class UploadsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get upload by id (current tenant only)' })
-  async getById(
-    @CurrentTenant() organizationId: string,
-    @Param('id') id: string,
-  ) {
+  async getById(@CurrentTenant() organizationId: string, @Param('id') id: string) {
     return this.uploadsService.getById(organizationId, id);
   }
 }
