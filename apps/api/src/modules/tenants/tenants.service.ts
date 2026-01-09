@@ -7,21 +7,27 @@ import * as bcrypt from 'bcrypt';
 import { UserRole } from '@shared/constants';
 import { validateTIN } from '@shared/validators';
 import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../supabase/supabase.service';
 import { RegisterTenantDto, UpdateTenantDto } from './dto';
 
 @Injectable()
 export class TenantsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   async register(dto: RegisterTenantDto) {
     if (!validateTIN(dto.tin)) {
       throw new BadRequestException('Invalid TIN format');
     }
 
+    const admin = this.supabaseService.getAdminClient();
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     try {
       return await this.prisma.$transaction(async (tx) => {
+        // 1. Create Organization in Prisma
         const organization = await tx.organization.create({
           data: {
             name: dto.name,
@@ -39,8 +45,31 @@ export class TenantsService {
           },
         });
 
+        // 2. Create User in Supabase Auth
+        const { data: authCreated, error: authError } =
+          await admin.auth.admin.createUser({
+            email: dto.email,
+            password: dto.password,
+            email_confirm: true,
+            user_metadata: {
+              full_name: dto.admin_full_name,
+            },
+            app_metadata: {
+              organization_id: organization.id,
+              role: UserRole.VAT_TEAM_LEAD,
+            },
+          });
+
+        if (authError || !authCreated?.user) {
+          throw new BadRequestException(
+            authError?.message ?? 'Admin user creation failed in Supabase',
+          );
+        }
+
+        // 3. Create User in Prisma
         const user = await tx.user.create({
           data: {
+            id: authCreated.user.id,
             organization_id: organization.id,
             email: dto.email,
             password_hash: passwordHash,
@@ -57,7 +86,9 @@ export class TenantsService {
       });
     } catch (error) {
       if (error.code === 'P2002') {
-        throw new ConflictException('Organization with this TIN or Email already exists');
+        throw new ConflictException(
+          'Organization with this TIN or Email already exists',
+        );
       }
       throw new BadRequestException(error.message || 'Registration failed');
     }
