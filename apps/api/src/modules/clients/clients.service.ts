@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { validateTIN } from '@shared/validators';
+import { validateTIN } from '@shared/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateClientDto, UpdateClientDto } from './dto';
 
