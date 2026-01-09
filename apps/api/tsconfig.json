@@ -20,7 +20,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@shared/*": ["../../packages/shared/src/*"],
+      "@shared/*": ["../../packages/shared/dist/*"],
       "@config/*": ["./src/config/*"],
       "@modules/*": ["./src/modules/*"],
       "@common/*": ["./src/common/*"],
