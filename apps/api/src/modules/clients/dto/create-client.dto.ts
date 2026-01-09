@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { TaxablePeriod } from '@shared/constants';
+import { TaxablePeriod } from '@shared/core';
 import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
 
 export class CreateClientDto {

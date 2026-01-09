@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@shared/constants';
+import { UserRole } from '@shared/core';
 import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../common/guards';
 import { AuthService } from './auth.service';

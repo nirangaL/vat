@@ -3,7 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto, RegisterUserDto } from './dto';
-import { UserRole } from '@shared/constants';
+import { UserRole } from '@shared/core';
 
 @Injectable()
 export class AuthService {

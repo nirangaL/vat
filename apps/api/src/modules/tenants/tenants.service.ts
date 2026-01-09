@@ -1,8 +1,7 @@
 import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
-import { UserRole } from '@shared/constants';
-import { validateTIN } from '@shared/validators';
+import { UserRole, validateTIN } from '@shared/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { RegisterTenantDto, UpdateTenantDto } from './dto';

@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { SupabaseService } from '../../supabase/supabase.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UserRole } from '@shared/constants';
+import { UserRole } from '@shared/core';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
