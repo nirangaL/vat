@@ -17,13 +17,15 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { CurrentTenant, CurrentUser } from '../../common/decorators';
+import { CurrentTenant } from '../../common/decorators';
 import { CreateUploadDto } from './dto';
 import { UploadsService } from './uploads.service';
+import { TenantContextInterceptor } from '../../common/interceptors/tenant-context.interceptor';
 
 @ApiTags('Uploads')
 @Controller('uploads')
 @ApiBearerAuth()
+@UseInterceptors(TenantContextInterceptor)
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
@@ -49,27 +51,25 @@ export class UploadsController {
     }),
   )
   async upload(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: any,
+    @CurrentTenant() organizationId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreateUploadDto,
   ) {
-    return this.uploadsService.upload(tenantId, user.accessToken, file, dto);
+    return this.uploadsService.upload(organizationId, file, dto);
   }
 
   @Get()
   @ApiOperation({ summary: 'List uploads for current tenant' })
-  async list(@CurrentTenant() tenantId: string, @CurrentUser() user: any) {
-    return this.uploadsService.list(tenantId, user.accessToken);
+  async list(@CurrentTenant() organizationId: string) {
+    return this.uploadsService.list(organizationId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get upload by id (current tenant only)' })
   async getById(
-    @CurrentTenant() tenantId: string,
-    @CurrentUser() user: any,
+    @CurrentTenant() organizationId: string,
     @Param('id') id: string,
   ) {
-    return this.uploadsService.getById(tenantId, user.accessToken, id);
+    return this.uploadsService.getById(organizationId, id);
   }
 }

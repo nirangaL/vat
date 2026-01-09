@@ -4,15 +4,18 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseService } from '../../supabase/supabase.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUploadDto } from './dto';
 
 @Injectable()
 export class UploadsService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    private readonly supabaseService: SupabaseService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async upload(
-    tenantId: string,
-    accessToken: string,
+    organizationId: string,
     file: Express.Multer.File,
     dto: CreateUploadDto,
   ) {
@@ -27,7 +30,7 @@ export class UploadsService {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
     const clientPath = dto.client_id ? `client-${dto.client_id}` : 'general';
-    const path = `uploads/${tenantId}/${clientPath}/${timestamp}-${safeName}`;
+    const path = `uploads/${organizationId}/${clientPath}/${timestamp}-${safeName}`;
 
     const { error: uploadError } = await admin.storage
       .from(bucket)
@@ -43,63 +46,47 @@ export class UploadsService {
     const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);
     const fileUrl = urlData.publicUrl;
 
-    const client = this.supabaseService.createUserClient(accessToken);
-
-    const { data, error } = await client
-      .from('uploads')
-      .insert({
-        tenant_id: tenantId,
-        client_id: dto.client_id,
-        file_name: file.originalname,
-        file_url: fileUrl,
-        file_size: file.size,
-        file_type: file.mimetype,
-        upload_type: dto.upload_type ?? 'csv',
-        status: 'uploaded',
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      this.supabaseService.handleError(error);
+    try {
+      return await this.prisma.upload.create({
+        data: {
+          organization_id: organizationId,
+          client_id: dto.client_id,
+          file_name: file.originalname,
+          file_url: fileUrl,
+          file_size: file.size,
+          file_type: file.mimetype,
+          upload_type: dto.upload_type ?? 'csv',
+          status: 'uploaded',
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(error.message || 'Database creation failed');
     }
-
-    return data;
   }
 
-  async list(tenantId: string, accessToken: string) {
-    const client = this.supabaseService.createUserClient(accessToken);
-
-    const { data, error } = await client
-      .from('uploads')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      this.supabaseService.handleError(error);
-    }
-
-    return data ?? [];
+  async list(organizationId: string) {
+    return this.prisma.upload.findMany({
+      where: {
+        organization_id: organizationId,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
   }
 
-  async getById(tenantId: string, accessToken: string, id: string) {
-    const client = this.supabaseService.createUserClient(accessToken);
+  async getById(organizationId: string, id: string) {
+    const upload = await this.prisma.upload.findUnique({
+      where: {
+        id,
+        organization_id: organizationId,
+      },
+    });
 
-    const { data, error } = await client
-      .from('uploads')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        throw new NotFoundException('Upload not found');
-      }
-      this.supabaseService.handleError(error);
+    if (!upload) {
+      throw new NotFoundException('Upload not found');
     }
 
-    return data;
+    return upload;
   }
 }

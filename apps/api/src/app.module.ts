@@ -19,7 +19,8 @@ import { HealthModule } from './modules/health/health.module';
 import { JwtAuthGuard } from './common/guards';
 import { HttpExceptionFilter } from './common/filters';
 import { LoggingInterceptor, TransformInterceptor } from './common/interceptors';
-import { TenantIsolationMiddleware } from './common/middleware/tenant-isolation.middleware';
+import { PrismaModule } from './prisma/prisma.module';
+import { PrismaTenantMiddleware } from './prisma/prisma-tenant.middleware';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { TenantIsolationMiddleware } from './common/middleware/tenant-isolation.
         }),
       ],
     }),
+    PrismaModule,
     SupabaseModule,
     AuthModule,
     TenantsModule,
@@ -84,6 +86,6 @@ import { TenantIsolationMiddleware } from './common/middleware/tenant-isolation.
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(TenantIsolationMiddleware).forRoutes('*');
+    consumer.apply(PrismaTenantMiddleware).forRoutes('*');
   }
 }
