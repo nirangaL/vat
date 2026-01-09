@@ -4,6 +4,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 import { UserRole } from '@shared/constants';
 import { validateTIN } from '@shared/validators';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -26,7 +27,7 @@ export class TenantsService {
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     try {
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // 1. Create Organization in Prisma
         const organization = await tx.organization.create({
           data: {
