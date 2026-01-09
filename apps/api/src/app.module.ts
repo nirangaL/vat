@@ -1,41 +1,32 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 
-import databaseConfig from './config/database.config';
-import jwtConfig from './config/jwt.config';
-import firebaseConfig from './config/firebase.config';
+import supabaseConfig from './config/supabase.config';
 import emailConfig from './config/email.config';
 import stripeConfig from './config/stripe.config';
 
+import { SupabaseModule } from './supabase/supabase.module';
+
 import { AuthModule } from './modules/auth/auth.module';
-import { CompaniesModule } from './modules/companies/companies.module';
-import { UploadsModule } from './modules/uploads/uploads.module';
-import { MappingModule } from './modules/mapping/mapping.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+import { TenantsModule } from './modules/tenants/tenants.module';
+import { ClientsModule } from './modules/clients/clients.module';
+import { BrandingModule } from './modules/branding/branding.module';
 import { HealthModule } from './modules/health/health.module';
 
 import { JwtAuthGuard } from './common/guards';
 import { HttpExceptionFilter } from './common/filters';
 import { LoggingInterceptor, TransformInterceptor } from './common/interceptors';
+import { TenantIsolationMiddleware } from './common/middleware/tenant-isolation.middleware';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [databaseConfig, jwtConfig, firebaseConfig, emailConfig, stripeConfig],
+      load: [supabaseConfig, emailConfig, stripeConfig],
       envFilePath: ['.env.local', '.env'],
-    }),
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        uri: configService.get<string>('database.uri'),
-        ...configService.get('database.options'),
-      }),
     }),
     WinstonModule.forRoot({
       transports: [
@@ -65,11 +56,11 @@ import { LoggingInterceptor, TransformInterceptor } from './common/interceptors'
         }),
       ],
     }),
+    SupabaseModule,
     AuthModule,
-    CompaniesModule,
-    UploadsModule,
-    MappingModule,
-    NotificationsModule,
+    TenantsModule,
+    ClientsModule,
+    BrandingModule,
     HealthModule,
   ],
   providers: [
@@ -91,4 +82,8 @@ import { LoggingInterceptor, TransformInterceptor } from './common/interceptors'
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(TenantIsolationMiddleware).forRoutes('*');
+  }
+}

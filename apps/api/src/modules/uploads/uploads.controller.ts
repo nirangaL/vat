@@ -1,87 +1,75 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Delete,
-  Param,
-  Query,
-  UseGuards,
-  UseInterceptors,
-  UploadedFile,
   Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
-  ApiTags,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiBody,
+  ApiTags,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { CurrentTenant, CurrentUser } from '../../common/decorators';
+import { CreateUploadDto } from './dto';
 import { UploadsService } from './uploads.service';
-import { UploadFileDto } from './dto';
-import { JwtAuthGuard } from '../../common/guards';
-import { CurrentUser } from '../../common/decorators';
 
 @ApiTags('Uploads')
 @Controller('uploads')
-@UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  @Post('file')
-  @UseInterceptors(FileInterceptor('file'))
+  @Post()
+  @ApiOperation({ summary: 'Upload a VAT file (stored in Supabase Storage)' })
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload CSV/Excel file' })
   @ApiBody({
-    description: 'File upload with metadata',
-    type: UploadFileDto,
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+        client_id: { type: 'string', format: 'uuid' },
+        upload_type: { type: 'string' },
+      },
+      required: ['file'],
+    },
   })
   @ApiResponse({ status: 201, description: 'File uploaded successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid file' })
-  async uploadFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: { companyId: string; mappingTemplateId?: string },
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
+  async upload(
+    @CurrentTenant() tenantId: string,
     @CurrentUser() user: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: CreateUploadDto,
   ) {
-    return this.uploadsService.uploadFile(
-      file,
-      body.companyId,
-      user.userId,
-      body.mappingTemplateId,
-    );
+    return this.uploadsService.upload(tenantId, user.accessToken, file, dto);
   }
 
-  @Get('company/:companyId')
-  @ApiOperation({ summary: 'Get all uploads for a company' })
-  @ApiResponse({ status: 200, description: 'Uploads retrieved successfully' })
-  async findByCompany(@Param('companyId') companyId: string, @Query() query: any) {
-    return this.uploadsService.findByCompany(companyId, query);
+  @Get()
+  @ApiOperation({ summary: 'List uploads for current tenant' })
+  async list(@CurrentTenant() tenantId: string, @CurrentUser() user: any) {
+    return this.uploadsService.list(tenantId, user.accessToken);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get upload by ID' })
-  @ApiResponse({ status: 200, description: 'Upload retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Upload not found' })
-  async findById(@Param('id') id: string) {
-    return this.uploadsService.findById(id);
-  }
-
-  @Get(':id/url')
-  @ApiOperation({ summary: 'Get signed URL for file download' })
-  @ApiResponse({ status: 200, description: 'Signed URL generated successfully' })
-  @ApiResponse({ status: 404, description: 'Upload not found' })
-  async getFileUrl(@Param('id') id: string, @Query('expiresIn') expiresIn?: number) {
-    return this.uploadsService.getFileUrl(id, expiresIn ? parseInt(expiresIn as any) : 3600);
-  }
-
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete uploaded file' })
-  @ApiResponse({ status: 200, description: 'File deleted successfully' })
-  @ApiResponse({ status: 404, description: 'Upload not found' })
-  async deleteFile(@Param('id') id: string) {
-    return this.uploadsService.deleteFile(id);
+  @ApiOperation({ summary: 'Get upload by id (current tenant only)' })
+  async getById(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+  ) {
+    return this.uploadsService.getById(tenantId, user.accessToken, id);
   }
 }

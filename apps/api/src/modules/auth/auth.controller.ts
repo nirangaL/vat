@@ -1,14 +1,15 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@shared/constants';
+import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
+import { RolesGuard } from '../../common/guards';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, Verify2FADto, RefreshTokenDto } from './dto';
-import { Public, CurrentUser } from '../../common/decorators';
-import { JwtAuthGuard } from '../../common/guards';
+import { LoginDto, RegisterUserDto } from './dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -16,57 +17,32 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User registered successfully' })
-  @ApiResponse({ status: 409, description: 'User already exists' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
-  async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
-  }
-
-  @Public()
   @Post('login')
-  @ApiOperation({ summary: 'Login with email and password' })
+  @ApiOperation({ summary: 'Login with email/password (Supabase Auth)' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
-  @Public()
-  @Post('verify-2fa')
-  @ApiOperation({ summary: 'Verify 2FA code (TOTP or Email OTP)' })
-  @ApiResponse({ status: 200, description: '2FA verified successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid 2FA code' })
-  async verify2FA(@Body() verify2FADto: Verify2FADto) {
-    return this.authService.verify2FA(verify2FADto);
-  }
-
-  @Public()
-  @Post('refresh')
-  @ApiOperation({ summary: 'Refresh access token using refresh token' })
-  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
-  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
-    return this.authService.refreshToken(refreshTokenDto);
-  }
-
-  @UseGuards(JwtAuthGuard)
+  @Post('register')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.SUPER_ADMIN, UserRole.VAT_TEAM_LEAD)
   @ApiBearerAuth()
-  @Post('logout')
-  @ApiOperation({ summary: 'Logout user' })
-  @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@CurrentUser() user: any) {
-    return this.authService.logout(user.userId);
+  @ApiOperation({ summary: 'Create a new user within the current tenant' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  async registerUser(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: RegisterUserDto,
+  ) {
+    return this.authService.registerUser(tenantId, dto);
   }
 
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Get('me')
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'User profile retrieved' })
-  async getProfile(@CurrentUser() user: any) {
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user' })
+  @ApiResponse({ status: 200, description: 'Current user retrieved' })
+  async me(@CurrentUser() user: any) {
     return user;
   }
 }

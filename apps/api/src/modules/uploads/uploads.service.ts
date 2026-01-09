@@ -1,159 +1,105 @@
 import {
-  Injectable,
   BadRequestException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Upload, UploadDocument } from '../../schemas/upload.schema';
-import { FirebaseService } from './firebase.service';
-import { FileUploadStatus, SUPPORTED_FILE_TYPES, FILE_SIZE_LIMITS } from '@shared/constants';
+import { SupabaseService } from '../../supabase/supabase.service';
+import { CreateUploadDto } from './dto';
 
 @Injectable()
 export class UploadsService {
-  constructor(
-    @InjectModel(Upload.name) private uploadModel: Model<UploadDocument>,
-    private firebaseService: FirebaseService,
-  ) {}
+  constructor(private readonly supabaseService: SupabaseService) {}
 
-  async uploadFile(
+  async upload(
+    tenantId: string,
+    accessToken: string,
     file: Express.Multer.File,
-    companyId: string,
-    uploadedBy: string,
-    mappingTemplateId?: string,
+    dto: CreateUploadDto,
   ) {
-    this.validateFile(file);
+    if (!file?.buffer) {
+      throw new BadRequestException('No file uploaded');
+    }
 
-    const destination = `companies/${companyId}/uploads`;
-    const { filePath, publicUrl } = await this.firebaseService.uploadFile(file, destination);
+    const bucket = this.supabaseService.getBucketName();
+    const admin = this.supabaseService.getAdminClient();
 
-    const upload = await this.uploadModel.create({
-      companyId,
-      uploadedBy,
-      fileName: file.originalname,
-      fileSize: file.size,
-      filePath,
-      mimeType: file.mimetype,
-      status: FileUploadStatus.PENDING,
-      mappingTemplateId,
-      metadata: {
-        publicUrl,
-      },
-    });
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
-    return upload;
+    const clientPath = dto.client_id ? `client-${dto.client_id}` : 'general';
+    const path = `uploads/${tenantId}/${clientPath}/${timestamp}-${safeName}`;
+
+    const { error: uploadError } = await admin.storage
+      .from(bucket)
+      .upload(path, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      this.supabaseService.handleError(uploadError, 'Upload failed');
+    }
+
+    const { data: urlData } = admin.storage.from(bucket).getPublicUrl(path);
+    const fileUrl = urlData.publicUrl;
+
+    const client = this.supabaseService.createUserClient(accessToken);
+
+    const { data, error } = await client
+      .from('uploads')
+      .insert({
+        tenant_id: tenantId,
+        client_id: dto.client_id,
+        file_name: file.originalname,
+        file_url: fileUrl,
+        file_size: file.size,
+        file_type: file.mimetype,
+        upload_type: dto.upload_type ?? 'csv',
+        status: 'uploaded',
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      this.supabaseService.handleError(error);
+    }
+
+    return data;
   }
 
-  async findByCompany(companyId: string, query: any = {}) {
-    const { page = 1, limit = 10, status } = query;
-    const filter: any = { companyId };
+  async list(tenantId: string, accessToken: string) {
+    const client = this.supabaseService.createUserClient(accessToken);
 
-    if (status) {
-      filter.status = status;
+    const { data, error } = await client
+      .from('uploads')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      this.supabaseService.handleError(error);
     }
 
-    const skip = (page - 1) * limit;
-
-    const [uploads, total] = await Promise.all([
-      this.uploadModel
-        .find(filter)
-        .populate('uploadedBy', 'firstName lastName email')
-        .populate('mappingTemplateId', 'name systemType')
-        .skip(skip)
-        .limit(limit)
-        .sort({ createdAt: -1 })
-        .lean(),
-      this.uploadModel.countDocuments(filter),
-    ]);
-
-    return {
-      items: uploads,
-      total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      totalPages: Math.ceil(total / limit),
-    };
+    return data ?? [];
   }
 
-  async findById(id: string) {
-    const upload = await this.uploadModel
-      .findById(id)
-      .populate('uploadedBy', 'firstName lastName email')
-      .populate('companyId', 'name tin')
-      .populate('mappingTemplateId', 'name systemType')
-      .lean();
+  async getById(tenantId: string, accessToken: string, id: string) {
+    const client = this.supabaseService.createUserClient(accessToken);
 
-    if (!upload) {
-      throw new NotFoundException('Upload not found');
+    const { data, error } = await client
+      .from('uploads')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        throw new NotFoundException('Upload not found');
+      }
+      this.supabaseService.handleError(error);
     }
 
-    return upload;
-  }
-
-  async getFileUrl(id: string, expiresIn: number = 3600) {
-    const upload = await this.uploadModel.findById(id);
-    if (!upload) {
-      throw new NotFoundException('Upload not found');
-    }
-
-    const url = await this.firebaseService.getSignedUrl(upload.filePath, expiresIn);
-    return { url, expiresIn };
-  }
-
-  async updateStatus(
-    id: string,
-    status: FileUploadStatus,
-    data?: {
-      rowCount?: number;
-      validRowCount?: number;
-      errorRowCount?: number;
-      errors?: Array<{ row: number; field: string; message: string }>;
-    },
-  ) {
-    const upload = await this.uploadModel.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          status,
-          ...data,
-          processedAt: status === FileUploadStatus.COMPLETED ? new Date() : undefined,
-        },
-      },
-      { new: true },
-    );
-
-    if (!upload) {
-      throw new NotFoundException('Upload not found');
-    }
-
-    return upload;
-  }
-
-  async deleteFile(id: string) {
-    const upload = await this.uploadModel.findById(id);
-    if (!upload) {
-      throw new NotFoundException('Upload not found');
-    }
-
-    await this.firebaseService.deleteFile(upload.filePath);
-    await this.uploadModel.findByIdAndDelete(id);
-
-    return { message: 'File deleted successfully' };
-  }
-
-  private validateFile(file: Express.Multer.File) {
-    const isSpreadsheet = SUPPORTED_FILE_TYPES.SPREADSHEET.includes(file.mimetype as any);
-
-    if (!isSpreadsheet) {
-      throw new BadRequestException(
-        'Invalid file type. Only CSV and Excel files are allowed.',
-      );
-    }
-
-    if (file.size > FILE_SIZE_LIMITS.CSV_MAX_SIZE) {
-      throw new BadRequestException(
-        `File size exceeds maximum allowed size of ${FILE_SIZE_LIMITS.CSV_MAX_SIZE / (1024 * 1024)}MB`,
-      );
-    }
+    return data;
   }
 }
