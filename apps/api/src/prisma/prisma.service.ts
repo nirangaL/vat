@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
@@ -13,7 +13,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   private applyTenantMiddleware() {
-    this.$use(async (params, next) => {
+    this.$use(async (params: Prisma.MiddlewareParams, next: (params: Prisma.MiddlewareParams) => Promise<any>) => {
       // Tables that require organization_id filtering
       const tablesWithTenantId = [
         'User',
