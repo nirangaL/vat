@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, Length } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Length, IsUrl } from 'class-validator';
 
 export class CreateTenantDto {
   @ApiProperty({ example: 'ABC VAT Consultants' })
@@ -19,4 +19,9 @@ export class CreateTenantDto {
   @ApiProperty({ example: 'support@abcvat.com' })
   @IsEmail()
   email: string;
+
+  @ApiPropertyOptional({ example: 'https://abcvat.com' })
+  @IsOptional()
+  @IsUrl()
+  website?: string;
 }

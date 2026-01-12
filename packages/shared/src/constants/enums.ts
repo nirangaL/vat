@@ -82,3 +82,22 @@ export enum TwoFactorMethod {
   EMAIL_OTP = 'EMAIL_OTP',
   TOTP = 'TOTP',
 }
+
+export enum SubscriptionPlan {
+  BASIC = 'basic',
+  PROFESSIONAL = 'professional',
+  ENTERPRISE = 'enterprise',
+}
+
+export enum SubscriptionStatus {
+  TRIAL = 'trial',
+  ACTIVE = 'active',
+  SUSPENDED = 'suspended',
+  CANCELLED = 'cancelled',
+}
+
+export enum ClientStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  SUSPENDED = 'suspended',
+}
