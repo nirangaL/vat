@@ -1,0 +1,652 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "summary": "Login with email/password",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        },
+        "tags": ["Authentication"]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "summary": "Refresh access token using refresh token",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Token refreshed successfully"
+          },
+          "401": {
+            "description": "Invalid or expired refresh token"
+          }
+        },
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout",
+        "summary": "Logout (revoke refresh token)",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Logged out successfully"
+          }
+        },
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/register": {
+      "post": {
+        "operationId": "AuthController_registerUser",
+        "summary": "Create a new user within the current organization",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created successfully"
+          }
+        },
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "summary": "Get current user",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Current user retrieved"
+          }
+        },
+        "tags": ["Authentication"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/tenants/register": {
+      "post": {
+        "operationId": "TenantsController_register",
+        "summary": "Register a new tenant (service provider)",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterTenantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tenant registered successfully"
+          }
+        },
+        "tags": ["Tenants"]
+      }
+    },
+    "/api/v1/tenants/me": {
+      "get": {
+        "operationId": "TenantsController_me",
+        "summary": "Get current tenant's profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Tenant profile retrieved"
+          }
+        },
+        "tags": ["Tenants"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "TenantsController_updateMe",
+        "summary": "Update current tenant's profile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTenantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tenant profile updated"
+          }
+        },
+        "tags": ["Tenants"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clients": {
+      "post": {
+        "operationId": "ClientsController_create",
+        "summary": "Create a client within current tenant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateClientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Client created successfully"
+          }
+        },
+        "tags": ["Clients"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "ClientsController_findAll",
+        "summary": "List clients for current tenant",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Clients retrieved successfully"
+          }
+        },
+        "tags": ["Clients"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/clients/{id}": {
+      "get": {
+        "operationId": "ClientsController_findById",
+        "summary": "Get client by ID (current tenant only)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Client retrieved successfully"
+          },
+          "404": {
+            "description": "Client not found"
+          }
+        },
+        "tags": ["Clients"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "ClientsController_update",
+        "summary": "Update a client (current tenant only)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClientDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Client updated successfully"
+          }
+        },
+        "tags": ["Clients"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/branding": {
+      "get": {
+        "operationId": "BrandingController_getBranding",
+        "summary": "Get branding for current tenant",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Branding retrieved successfully"
+          }
+        },
+        "tags": ["Branding"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "patch": {
+        "operationId": "BrandingController_updateBranding",
+        "summary": "Update branding for current tenant",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBrandingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Branding updated successfully"
+          }
+        },
+        "tags": ["Branding"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/branding/logo": {
+      "post": {
+        "operationId": "BrandingController_uploadLogo",
+        "summary": "Upload tenant logo to Supabase Storage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Branding"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/branding/favicon": {
+      "post": {
+        "operationId": "BrandingController_uploadFavicon",
+        "summary": "Upload tenant favicon to Supabase Storage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": ["Branding"],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "summary": "Health check endpoint",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          },
+          "503": {
+            "description": "Service is unhealthy"
+          }
+        },
+        "tags": ["Health"]
+      }
+    }
+  },
+  "info": {
+    "title": "VAT Management SaaS API",
+    "description": "Multi-tenant VAT Management and IRD Submission API (Supabase PostgreSQL + RLS + White-labeling)",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Supabase Auth + JWT tenant context"
+    },
+    {
+      "name": "Tenants",
+      "description": "Service provider (tenant) registration and profile"
+    },
+    {
+      "name": "Branding",
+      "description": "White-label branding per tenant"
+    },
+    {
+      "name": "Clients",
+      "description": "Tenant client management"
+    },
+    {
+      "name": "Health",
+      "description": "Health check and system status"
+    }
+  ],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin@abcvat.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "RegisterUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "member@abcvat.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "full_name": {
+            "type": "string",
+            "example": "Jane Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["SUPER_ADMIN", "VAT_TEAM_LEAD", "VAT_TEAM_MEMBER", "CLIENT"],
+            "default": "VAT_TEAM_MEMBER"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "RegisterTenantDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "ABC VAT Consultants"
+          },
+          "registration_number": {
+            "type": "string",
+            "example": "PV12345"
+          },
+          "tin": {
+            "type": "string",
+            "example": "123456789V",
+            "description": "Sri Lankan TIN"
+          },
+          "email": {
+            "type": "string",
+            "example": "support@abcvat.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8
+          },
+          "admin_full_name": {
+            "type": "string",
+            "example": "John Doe"
+          }
+        },
+        "required": ["name", "tin", "email", "password"]
+      },
+      "UpdateTenantDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "ABC VAT Consultants"
+          },
+          "registration_number": {
+            "type": "string",
+            "example": "PV12345"
+          }
+        }
+      },
+      "CreateClientDto": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "example": "Acme (Pvt) Ltd"
+          },
+          "tin": {
+            "type": "string",
+            "example": "123456789V"
+          },
+          "registration_number": {
+            "type": "string",
+            "example": "PV98765"
+          },
+          "taxable_period": {
+            "type": "string",
+            "enum": ["MONTHLY", "QUARTERLY"],
+            "default": "QUARTERLY"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "industry": {
+            "type": "string",
+            "example": "Manufacturing"
+          },
+          "annual_turnover": {
+            "type": "string",
+            "example": "10M-50M"
+          }
+        },
+        "required": ["company_name", "tin"]
+      },
+      "UpdateClientDto": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "example": "Acme (Pvt) Ltd"
+          },
+          "tin": {
+            "type": "string",
+            "example": "123456789V"
+          },
+          "registration_number": {
+            "type": "string",
+            "example": "PV98765"
+          },
+          "taxable_period": {
+            "type": "string",
+            "enum": ["MONTHLY", "QUARTERLY"],
+            "default": "QUARTERLY"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "industry": {
+            "type": "string",
+            "example": "Manufacturing"
+          },
+          "annual_turnover": {
+            "type": "string",
+            "example": "10M-50M"
+          }
+        }
+      },
+      "UpdateBrandingDto": {
+        "type": "object",
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "example": "ABC VAT Consultants"
+          },
+          "company_website": {
+            "type": "string",
+            "example": "https://abcvat.com"
+          },
+          "support_email": {
+            "type": "string",
+            "example": "support@abcvat.com"
+          },
+          "support_phone": {
+            "type": "string",
+            "example": "+94 77 123 4567"
+          },
+          "colors": {
+            "type": "object",
+            "example": {
+              "primary": "#0066CC",
+              "secondary": "#00CC66",
+              "accent": "#FF6600",
+              "background": "#FFFFFF",
+              "text_color": "#333333"
+            }
+          },
+          "footer_text": {
+            "type": "string",
+            "example": "Powered by Simplebooks VAT"
+          },
+          "custom_assets": {
+            "type": "object"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    }
+  }
+}

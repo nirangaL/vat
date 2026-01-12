@@ -3,8 +3,9 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { UserRole } from '@shared/core';
 
 import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
-import { JwtRefreshGuard, RolesGuard } from '../../common/guards';
 import { TenantContextInterceptor } from '../../common/interceptors/tenant-context.interceptor';
+
+import { JwtRefreshGuard, RolesGuard } from './guards';
 
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterUserDto } from './dto';
