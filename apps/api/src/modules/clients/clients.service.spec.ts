@@ -30,7 +30,7 @@ describe('ClientsService', () => {
   it('should create a client', async () => {
     const createClientDto = {
       company_name: 'Test Company',
-      tin: '1234567890',
+      tin: '123456789',
       taxable_period: 'quarterly',
     } as any;
 
