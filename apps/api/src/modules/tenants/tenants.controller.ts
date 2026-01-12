@@ -13,7 +13,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../modules/auth/guards';
-import { UserRole } from '@shared/core';
+import { UserRole, CurrentUser as CurrentUserType } from '@shared/core';
 import {
   RegisterTenantDto,
   UpdateTenantDto,
@@ -55,7 +55,7 @@ export class TenantsController {
   async updateMe(
     @CurrentTenant() organizationId: string,
     @Body() dto: UpdateTenantDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.tenantsService.updateMe(organizationId, dto);
   }
@@ -76,7 +76,7 @@ export class TenantsController {
   async updateSubscription(
     @CurrentTenant() organizationId: string,
     @Body() dto: UpdateSubscriptionDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.tenantsService.updateSubscription(organizationId, dto, user.id);
   }
@@ -105,7 +105,7 @@ export class TenantsController {
   async addUser(
     @CurrentTenant() organizationId: string,
     @Body() dto: InviteUserDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.tenantsService.addUser(organizationId, dto, user.id);
   }
@@ -119,7 +119,7 @@ export class TenantsController {
   async removeUser(
     @CurrentTenant() organizationId: string,
     @Param('userId') userId: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.tenantsService.removeUser(organizationId, userId, user.id);
   }
@@ -134,7 +134,7 @@ export class TenantsController {
     @CurrentTenant() organizationId: string,
     @Param('userId') userId: string,
     @Body() dto: UpdateUserRoleDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.tenantsService.updateUserRole(organizationId, userId, dto, user.id);
   }
@@ -154,7 +154,7 @@ export class TenantsController {
   @ApiOperation({ summary: 'Get tenant by ID (super admin only)' })
   @ApiResponse({ status: 200, description: 'Tenant retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Tenant not found' })
-  async findById(@Param('id') id: string, @CurrentUser() user?: any) {
+  async findById(@Param('id') id: string, @CurrentUser() user?: CurrentUserType) {
     return this.tenantsService.findById(id, user?.id);
   }
 
