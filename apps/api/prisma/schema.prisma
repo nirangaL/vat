@@ -59,6 +59,7 @@ model User {
   
   email               String    @unique
   password_hash       String
+  refresh_token_hash  String?
   full_name           String?
   role                String    @default("viewer") // SUPER_ADMIN, VAT_TEAM_LEAD, VAT_TEAM_MEMBER, CLIENT
   is_team_member      Boolean   @default(true)

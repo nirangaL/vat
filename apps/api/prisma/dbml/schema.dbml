@@ -33,6 +33,7 @@ Table User {
   organization Organization [not null]
   email String [unique, not null]
   password_hash String [not null]
+  refresh_token_hash String
   full_name String
   role String [not null, default: 'viewer']
   is_team_member Boolean [not null, default: true]

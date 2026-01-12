@@ -1,16 +1,56 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
-import { SupabaseService } from '../../supabase/supabase.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { LoginDto, RegisterUserDto } from './dto';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@shared/core';
+import * as bcrypt from 'bcrypt';
+
+import { PrismaService } from '../../prisma/prisma.service';
+import { SupabaseService } from '../../supabase/supabase.service';
+import { LoginDto, RegisterUserDto } from './dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly supabaseService: SupabaseService,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
+
+  private async signAccessToken(userId: string): Promise<string> {
+    const expiresIn = this.configService.get<string>('jwt.expiresIn') ?? '15m';
+
+    return this.jwtService.signAsync(
+      { sub: userId },
+      {
+        secret: this.configService.get<string>('jwt.secret'),
+        expiresIn,
+      },
+    );
+  }
+
+  private async signRefreshToken(userId: string): Promise<string> {
+    const expiresIn = this.configService.get<string>('jwt.refreshExpiresIn') ?? '7d';
+
+    return this.jwtService.signAsync(
+      { sub: userId },
+      {
+        secret: this.configService.get<string>('jwt.refreshSecret'),
+        expiresIn,
+      },
+    );
+  }
+
+  private async updateRefreshTokenHash(userId: string, refreshToken: string | null): Promise<void> {
+    const refresh_token_hash = refreshToken ? await bcrypt.hash(refreshToken, 10) : null;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        refresh_token_hash,
+      },
+    });
+  }
 
   async login(loginDto: LoginDto) {
     const supabase = this.supabaseService.getAnonClient();
@@ -20,13 +60,20 @@ export class AuthService {
       password: loginDto.password,
     });
 
-    if (error || !data.session || !data.user) {
+    if (error || !data.user) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     const dbUser = await this.prisma.user.findUnique({
       where: { id: data.user.id },
-      select: { organization_id: true, role: true, full_name: true, is_team_member: true },
+      select: {
+        id: true,
+        organization_id: true,
+        role: true,
+        full_name: true,
+        is_team_member: true,
+        is_active: true,
+      },
     });
 
     const organizationId =
@@ -43,18 +90,81 @@ export class AuthService {
       throw new UnauthorizedException('User missing organization context');
     }
 
+    if (!dbUser) {
+      throw new UnauthorizedException('User not found in tenant database');
+    }
+
+    if (!dbUser.is_active) {
+      throw new UnauthorizedException('User account is inactive');
+    }
+
+    const accessToken = await this.signAccessToken(dbUser.id);
+    const refreshToken = await this.signRefreshToken(dbUser.id);
+
+    await this.prisma.user.update({
+      where: { id: dbUser.id },
+      data: {
+        last_login: new Date(),
+      },
+    });
+
+    await this.updateRefreshTokenHash(dbUser.id, refreshToken);
+
     return {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
+      accessToken,
+      refreshToken,
       organizationId,
       user: {
-        id: data.user.id,
+        id: dbUser.id,
         email: data.user.email,
-        fullName: dbUser?.full_name,
+        fullName: dbUser.full_name ?? undefined,
         role,
         organizationId,
-        isTeamMember: dbUser?.is_team_member,
+        isTeamMember: dbUser.is_team_member,
       },
+    };
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        refresh_token_hash: true,
+        is_active: true,
+      },
+    });
+
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('Invalid or inactive user');
+    }
+
+    if (!user.refresh_token_hash) {
+      throw new UnauthorizedException('Refresh token has been revoked');
+    }
+
+    const tokenMatches = await bcrypt.compare(refreshToken, user.refresh_token_hash);
+
+    if (!tokenMatches) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const newAccessToken = await this.signAccessToken(user.id);
+    const newRefreshToken = await this.signRefreshToken(user.id);
+
+    await this.updateRefreshTokenHash(user.id, newRefreshToken);
+
+    return {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+    };
+  }
+
+  async logout(userId: string) {
+    await this.updateRefreshTokenHash(userId, null);
+
+    return {
+      success: true,
     };
   }
 
@@ -92,6 +202,7 @@ export class AuthService {
           role,
           is_team_member: true,
           two_fa_enabled: false,
+          refresh_token_hash: null,
         },
         select: {
           id: true,

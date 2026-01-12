@@ -7,6 +7,7 @@ import * as winston from 'winston';
 import supabaseConfig from './config/supabase.config';
 import emailConfig from './config/email.config';
 import stripeConfig from './config/stripe.config';
+import jwtConfig from './config/jwt.config';
 
 import { SupabaseModule } from './supabase/supabase.module';
 
@@ -26,7 +27,7 @@ import { PrismaTenantMiddleware } from './prisma/prisma-tenant.middleware';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [supabaseConfig, emailConfig, stripeConfig],
+      load: [supabaseConfig, emailConfig, stripeConfig, jwtConfig],
       envFilePath: ['.env.local', '.env'],
     }),
     WinstonModule.forRoot({

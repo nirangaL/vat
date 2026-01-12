@@ -1,11 +1,13 @@
 import { Body, Controller, Get, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@shared/core';
+
 import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
-import { RolesGuard } from '../../common/guards';
+import { JwtRefreshGuard, RolesGuard } from '../../common/guards';
+import { TenantContextInterceptor } from '../../common/interceptors/tenant-context.interceptor';
+
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterUserDto } from './dto';
-import { TenantContextInterceptor } from '../../common/interceptors/tenant-context.interceptor';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -15,11 +17,30 @@ export class AuthController {
 
   @Public()
   @Post('login')
-  @ApiOperation({ summary: 'Login with email/password (Supabase Auth)' })
+  @ApiOperation({ summary: 'Login with email/password' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Public()
+  @Post('refresh')
+  @UseGuards(JwtRefreshGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
+  async refresh(@CurrentUser() user: { userId: string; refreshToken: string }) {
+    return this.authService.refreshTokens(user.userId, user.refreshToken);
+  }
+
+  @Post('logout')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout (revoke refresh token)' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  async logout(@CurrentUser() user: { userId: string }) {
+    return this.authService.logout(user.userId);
   }
 
   @Post('register')
