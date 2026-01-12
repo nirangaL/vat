@@ -17,7 +17,7 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { BrandingModule } from './modules/branding/branding.module';
 import { HealthModule } from './modules/health/health.module';
 
-import { JwtAuthGuard } from './common/guards';
+import { JwtAuthGuard } from './modules/auth/guards';
 import { HttpExceptionFilter } from './common/filters';
 import { LoggingInterceptor, TransformInterceptor } from './common/interceptors';
 import { PrismaModule } from './prisma/prisma.module';
