@@ -14,7 +14,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentTenant, CurrentUser, Roles } from '../../common/decorators';
 import { RolesGuard } from '../../modules/auth/guards';
-import { UserRole } from '@shared/core';
+import { UserRole, CurrentUser as CurrentUserType } from '@shared/core';
 import { ClientsService } from './clients.service';
 import {
   CreateClientDto,
@@ -41,7 +41,7 @@ export class ClientsController {
   async create(
     @CurrentTenant() organizationId: string,
     @Body() dto: CreateClientDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.clientsService.create(organizationId, dto, user.id);
   }
@@ -70,7 +70,7 @@ export class ClientsController {
   async bulkImport(
     @CurrentTenant() organizationId: string,
     @Body() dto: BulkImportClientsDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.clientsService.bulkImport(organizationId, dto.csvData, user.id);
   }
@@ -92,7 +92,7 @@ export class ClientsController {
     @CurrentTenant() organizationId: string,
     @Param('id') id: string,
     @Body() dto: UpdateClientDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.clientsService.update(organizationId, id, dto, user.id);
   }
@@ -104,7 +104,7 @@ export class ClientsController {
   async softDelete(
     @CurrentTenant() organizationId: string,
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.clientsService.softDelete(organizationId, id, user.id);
   }
@@ -117,7 +117,7 @@ export class ClientsController {
     @CurrentTenant() organizationId: string,
     @Param('id') id: string,
     @Body() dto: UpdateClientStatusDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserType,
   ) {
     return this.clientsService.updateStatus(organizationId, id, dto, user.id);
   }

@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from '@shared/core';
+import { UserRole, CurrentUser as CurrentUserInterface } from '@shared/core';
 
 import { ROLES_KEY } from '../../../common/decorators/roles.decorator';
 
@@ -25,13 +25,13 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user as { role?: UserRole } | undefined;
+    const user = request.user as CurrentUserInterface | undefined;
 
     if (!user) {
       throw new UnauthorizedException('Missing authenticated user');
     }
 
-    if (!requiredRoles.includes(user.role as UserRole)) {
+    if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Insufficient permissions');
     }
 

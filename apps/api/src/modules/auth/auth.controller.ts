@@ -1,8 +1,13 @@
 import { Body, Controller, Get, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UserRole } from '@shared/core';
+import { UserRole, CurrentUser } from '@shared/core';
 
-import { CurrentTenant, CurrentUser, Public, Roles } from '../../common/decorators';
+import {
+  CurrentTenant,
+  CurrentUser as CurrentUserDecorator,
+  Public,
+  Roles,
+} from '../../common/decorators';
 import { TenantContextInterceptor } from '../../common/interceptors/tenant-context.interceptor';
 
 import { JwtRefreshGuard, RolesGuard } from './guards';
@@ -32,7 +37,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  async refresh(@CurrentUser() user: { userId: string; refreshToken: string }) {
+  async refresh(@CurrentUserDecorator() user: { userId: string; refreshToken: string }) {
     return this.authService.refreshTokens(user.userId, user.refreshToken);
   }
 
@@ -40,7 +45,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Logout (revoke refresh token)' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@CurrentUser() user: { userId: string }) {
+  async logout(@CurrentUserDecorator() user: { userId: string }) {
     return this.authService.logout(user.userId);
   }
 
@@ -58,7 +63,7 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user' })
   @ApiResponse({ status: 200, description: 'Current user retrieved' })
-  async me(@CurrentUser() user: any) {
+  async me(@CurrentUserDecorator() user: CurrentUser) {
     return user;
   }
 }

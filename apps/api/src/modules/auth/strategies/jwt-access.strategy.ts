@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { UserRole } from '@shared/core';
+import { CurrentUser, UserRole } from '@shared/core';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -22,7 +22,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
     });
   }
 
-  async validate(payload: JwtAccessPayload) {
+  async validate(payload: JwtAccessPayload): Promise<CurrentUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: {
@@ -33,6 +33,8 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
         organization_id: true,
         is_team_member: true,
         is_active: true,
+        two_fa_enabled: true,
+        last_login: true,
       },
     });
 
@@ -41,12 +43,15 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'jwt') {
     }
 
     return {
-      userId: user.id,
+      id: user.id,
       email: user.email,
       fullName: user.full_name ?? undefined,
+      organizationId: user.organization_id,
       role: user.role as UserRole,
-      organization_id: user.organization_id,
       isTeamMember: user.is_team_member,
+      isActive: user.is_active,
+      twoFaEnabled: user.two_fa_enabled,
+      lastLogin: user.last_login ?? undefined,
     };
   }
 }
